@@ -68,6 +68,32 @@ public:
         }
     }
 
+    std::string getCurrentBranchRef() {
+        std::filesystem::path head_path = git_dir / "HEAD";
+        if (!std::filesystem::exists(head_path)) return "refs/head/master";
+
+        std::string head_content = readFile(head_path);
+        if (head_content.find("ref: ") == 0) {
+            std::string ref = head_content.substr(5);
+            ref.erase(ref.find_last_not_of(" \n\r\t") + 1);
+            return ref;
+        }
+        return "";
+    }
+
+    std::string getParentCommit() {
+        std::string ref_path = getCurrentBranchRef();
+        if (ref_path.empty()) return "";
+
+        std::filesystem::path full_path = git_dir / ref_path;
+        if (std::filesystem::exists(full_path)) {
+            std::string hash = readFile(full_path);
+            hash.erase(hash.find_last_not_of(" \n\r\t") + 1);
+            return hash;
+        }
+        return "";
+    }
+
     std::string writeObject(const std::string& data, const std::string& type = "blob") {
         // build blob then hash
         std::string header = type + " " + std::to_string(data.size());
